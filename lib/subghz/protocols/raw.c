@@ -37,7 +37,7 @@ struct SubGhzProtocolDecoderRAW {
 struct SubGhzProtocolEncoderRAW {
     SubGhzProtocolEncoderBase base;
 
-    bool is_runing;
+    bool is_running;
     string_t file_name;
     SubGhzFileEncoderWorker* file_worker_encoder;
 };
@@ -57,6 +57,7 @@ const SubGhzProtocolDecoder subghz_protocol_raw_decoder = {
 
     .get_hash_data = NULL,
     .serialize = NULL,
+    .deserialize = subghz_protocol_decoder_raw_deserialize,
     .get_string = subghz_protocol_decoder_raw_get_string,
 };
 
@@ -246,9 +247,18 @@ void subghz_protocol_decoder_raw_feed(void* context, bool level, uint32_t durati
     }
 }
 
+bool subghz_protocol_decoder_raw_deserialize(void* context, FlipperFormat* flipper_format) {
+    furi_assert(context);
+    UNUSED(context);
+    UNUSED(flipper_format);
+    //ToDo stub, for backwards compatibility
+    return true;
+}
+
 void subghz_protocol_decoder_raw_get_string(void* context, string_t output) {
     furi_assert(context);
     //SubGhzProtocolDecoderRAW* instance = context;
+    UNUSED(context);
     //ToDo no use
     string_cat_printf(output, "RAW Date");
 }
@@ -259,13 +269,13 @@ void* subghz_protocol_encoder_raw_alloc(SubGhzEnvironment* environment) {
 
     instance->base.protocol = &subghz_protocol_raw;
     string_init(instance->file_name);
-    instance->is_runing = false;
+    instance->is_running = false;
     return instance;
 }
 
 void subghz_protocol_encoder_raw_stop(void* context) {
     SubGhzProtocolEncoderRAW* instance = context;
-    instance->is_runing = false;
+    instance->is_running = false;
     if(subghz_file_encoder_worker_is_running(instance->file_worker_encoder)) {
         subghz_file_encoder_worker_stop(instance->file_worker_encoder);
         subghz_file_encoder_worker_free(instance->file_worker_encoder);
@@ -298,11 +308,11 @@ static bool subghz_protocol_encoder_raw_worker_init(SubGhzProtocolEncoderRAW* in
            instance->file_worker_encoder, string_get_cstr(instance->file_name))) {
         //the worker needs a file in order to open and read part of the file
         furi_delay_ms(100);
-        instance->is_runing = true;
+        instance->is_running = true;
     } else {
         subghz_protocol_encoder_raw_stop(instance);
     }
-    return instance->is_runing;
+    return instance->is_running;
 }
 
 void subghz_protocol_raw_gen_fff_data(FlipperFormat* flipper_format, const char* file_path) {
@@ -347,6 +357,6 @@ bool subghz_protocol_encoder_raw_deserialize(void* context, FlipperFormat* flipp
 LevelDuration subghz_protocol_encoder_raw_yield(void* context) {
     SubGhzProtocolEncoderRAW* instance = context;
 
-    if(!instance->is_runing) return level_duration_reset();
+    if(!instance->is_running) return level_duration_reset();
     return subghz_file_encoder_worker_get_level_duration(instance->file_worker_encoder);
 }

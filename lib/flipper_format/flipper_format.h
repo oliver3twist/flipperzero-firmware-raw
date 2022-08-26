@@ -41,7 +41,7 @@
  * Writing:
  * 
  * ~~~~~~~~~~~~~~~~~~~~~
- * FlipperFormat format = flipper_format_file_alloc(storage);
+ * FlipperFormat* format = flipper_format_file_alloc(storage);
  * 
  * do {
  *     const uint32_t version = 1;
@@ -66,7 +66,7 @@
  * Reading:
  * 
  * ~~~~~~~~~~~~~~~~~~~~~
- * FlipperFormat file = flipper_format_file_alloc(storage);
+ * FlipperFormat* file = flipper_format_file_alloc(storage);
  * 
  * do {
  *     uint32_t version = 1;
@@ -116,7 +116,7 @@ FlipperFormat* flipper_format_string_alloc();
 FlipperFormat* flipper_format_file_alloc(Storage* storage);
 
 /**
- * Allocate FlipperFormat as file, buffered read-only mode.
+ * Allocate FlipperFormat as file, buffered mode.
  * @return FlipperFormat* pointer to a FlipperFormat instance
  */
 FlipperFormat* flipper_format_buffered_file_alloc(Storage* storage);
@@ -131,7 +131,7 @@ FlipperFormat* flipper_format_buffered_file_alloc(Storage* storage);
 bool flipper_format_file_open_existing(FlipperFormat* flipper_format, const char* path);
 
 /**
- * Open existing file, read-only with buffered read operations.
+ * Open existing file, buffered mode.
  * Use only if FlipperFormat allocated as a file.
  * @param flipper_format Pointer to a FlipperFormat instance
  * @param path File path
