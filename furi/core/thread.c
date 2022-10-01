@@ -85,19 +85,25 @@ static void furi_thread_body(void* context) {
     }
 
     furi_assert(thread->state == FuriThreadStateRunning);
-    furi_thread_set_state(thread, FuriThreadStateStopped);
 
     if(thread->is_service) {
         FURI_LOG_E(
-            "Service", "%s thread exited. Thread memory cannot be reclaimed.", thread->name);
+            "Service",
+            "%s thread exited. Thread memory cannot be reclaimed.",
+            thread->name ? thread->name : "<unknown service>");
     }
 
-    // clear thread local storage
+    // flush stdout
     __furi_thread_stdout_flush(thread);
+
+    // from here we can't use thread pointer
+    furi_thread_set_state(thread, FuriThreadStateStopped);
+
+    // clear thread local storage
     furi_assert(pvTaskGetThreadLocalStoragePointer(NULL, 0) != NULL);
     vTaskSetThreadLocalStoragePointer(NULL, 0, NULL);
 
-    vTaskDelete(thread->task_handle);
+    vTaskDelete(NULL);
     furi_thread_catch();
 }
 
@@ -203,11 +209,19 @@ void furi_thread_start(FuriThread* thread) {
 bool furi_thread_join(FuriThread* thread) {
     furi_assert(thread);
 
-    while(thread->state != FuriThreadStateStopped) {
+    furi_check(furi_thread_get_current() != thread);
+
+    // Check if thread was started
+    if(thread->task_handle == NULL) {
+        return false;
+    }
+
+    // Wait for thread to stop
+    while(eTaskGetState(thread->task_handle) != eDeleted) {
         furi_delay_ms(10);
     }
 
-    return FuriStatusOk;
+    return true;
 }
 
 FuriThreadId furi_thread_get_id(FuriThread* thread) {
@@ -515,4 +529,23 @@ size_t furi_thread_stdout_write(const char* data, size_t size) {
 
 int32_t furi_thread_stdout_flush() {
     return __furi_thread_stdout_flush(furi_thread_get_current());
+}
+
+void furi_thread_suspend(FuriThreadId thread_id) {
+    TaskHandle_t hTask = (TaskHandle_t)thread_id;
+    vTaskSuspend(hTask);
+}
+
+void furi_thread_resume(FuriThreadId thread_id) {
+    TaskHandle_t hTask = (TaskHandle_t)thread_id;
+    if(FURI_IS_IRQ_MODE()) {
+        xTaskResumeFromISR(hTask);
+    } else {
+        vTaskResume(hTask);
+    }
+}
+
+bool furi_thread_is_suspended(FuriThreadId thread_id) {
+    TaskHandle_t hTask = (TaskHandle_t)thread_id;
+    return eTaskGetState(hTask) == eSuspended;
 }

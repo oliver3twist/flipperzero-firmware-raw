@@ -3,16 +3,12 @@
 from flipper.app import App
 from flipper.assets.icon import file2image
 
-import logging
-import argparse
-import subprocess
-import io
 import os
-import sys
 
 ICONS_SUPPORTED_FORMATS = ["png"]
 
 ICONS_TEMPLATE_H_HEADER = """#pragma once
+
 #include <gui/icon.h>
 
 """
@@ -43,6 +39,13 @@ class Main(App):
             "manifest", help="Create directory Manifest"
         )
         self.parser_manifest.add_argument("local_path", help="local_path")
+        self.parser_manifest.add_argument(
+            "--timestamp",
+            help="timestamp value to embed",
+            default=0,
+            type=int,
+            required=False,
+        )
         self.parser_manifest.set_defaults(func=self.manifest)
 
         self.parser_copro = self.subparsers.add_parser(
@@ -115,7 +118,7 @@ class Main(App):
             if not filenames:
                 continue
             if "frame_rate" in filenames:
-                self.logger.debug(f"Folder contatins animation")
+                self.logger.debug(f"Folder contains animation")
                 icon_name = "A_" + os.path.split(dirpath)[1].replace("-", "_")
                 width = height = None
                 frame_count = 0
@@ -217,7 +220,7 @@ class Main(App):
         self.logger.info(
             f'Creating temporary Manifest for directory "{directory_path}"'
         )
-        new_manifest = Manifest()
+        new_manifest = Manifest(self.args.timestamp)
         new_manifest.create(directory_path)
 
         self.logger.info(f"Comparing new manifest with existing")
